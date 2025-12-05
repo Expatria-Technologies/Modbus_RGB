@@ -1,6 +1,8 @@
 # Modbus_RGB
 A plugin to add rgb capacity to a grblhal control board
 
+![c23qzt2ivx4c1](https://github.com/user-attachments/assets/fe163744-30c1-4a3e-bed8-e2028c5cc8aa)
+
 This was written with the intent of being used with the R4DVI04 eletechsup modbus IO board which carries 4 relays which can be used to drive a simple RGB LED Strip
 
 <img width="419" height="315" alt="image" src="https://github.com/user-attachments/assets/6c3b4d17-78bd-4ff6-89f2-90f75ca304a8" />
