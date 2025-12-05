@@ -12,6 +12,11 @@ Modbus MUST be enabled in your firmware.
 WARNING:
 In order to reduce modbus traffic from the spindle plugin i had to modify the spindle plugin. I used a gs20 spindle equivalent. You can find my files for that here: https://github.com/EmpyreanCNC/Plugins_spindle_with_MBIO/tree/master
 
+FURTHER NOTES:
+
+This required the addition of 2 new settings. I will be confirming with Terje whether these can stay allocated to the numbers I chose and whether the change to the spindle plugin above will be rolled into the main
+
+
 HOW TO INSTALL
 Make a new src folder/directory called rgb in the grblHAL src directory and put the content of this repository in the rgb directory.
 
