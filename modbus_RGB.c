@@ -15,7 +15,7 @@
 
 //this plugin was written with the intent of being used with the R4DVI04 eletechsup modbus IO board which carries 4 relays which can be used to drive a simple RGB LED Strip.
 
-#if MBRGB_ENABLE
+#if STATUS_LIGHT_ENABLE
 #include <math.h>
 #include "grbl/hal.h"
 #include "grbl/state_machine.h"
@@ -38,13 +38,15 @@ static nvs_address_t nvs_address;
 mbrgb_settings_t mbrgb_config;
 
 static const setting_detail_t mbrgb_settings[] = {
-     { Settings_ModBus_RGB_ADDRESS, Group_AuxPorts, "RGB Modbus Device Address", "", Format_Int16, "###0", "1", "250", Setting_NonCore, &mbrgb_config.RGB_modbus_address, NULL, NULL },
-     { Settings_ModBus_RGB_START_COIL, Group_AuxPorts, "RGB Modbus Starting Coil Address", "", Format_Int16, "###0", "1", "250", Setting_NonCore, &mbrgb_config.RGB_modbus_Coil, NULL, NULL },
+     { Setting_Action0, Group_AuxPorts, "RGB Modbus Device Enable", NULL, Format_Bool, NULL, NULL, NULL, Setting_NonCore, &mbrgb_config.RGB_modbus_enable, NULL, NULL },
+     { Setting_Action1, Group_AuxPorts, "RGB Modbus Device Address", "", Format_Int16, "###0", "1", "250", Setting_NonCore, &mbrgb_config.RGB_modbus_address, NULL, NULL },
+     { Setting_Action2, Group_AuxPorts, "RGB Modbus Starting Coil Address", "", Format_Int16, "###0", "1", "250", Setting_NonCore, &mbrgb_config.RGB_modbus_Coil, NULL, NULL },
 };
 
 static const setting_descr_t mbrgb_settings_descr[] = {
-    { Settings_ModBus_RGB_ADDRESS, "RGB Modbus Device Address" },
-    { Settings_ModBus_RGB_START_COIL, "RGB Modbus Starting Coil Address" },
+    { Setting_Action0, "RGB Modbus device is enabled" },
+    { Setting_Action1, "RGB Modbus Device Address" },
+    { Setting_Action2, "RGB Modbus Starting Coil Address" },
 };
 
 static void mbrgb_settings_save (void)
@@ -105,7 +107,9 @@ void mbrgb_ModBus_WriteCoils(int pack) {modbus_message_t _cmd = {
 
 static void rgb_state_changed (sys_state_t state)
 {
-        //int pack;  
+        if (!mbrgb_config.RGB_modbus_enable)
+            return;
+
         if(state == STATE_IDLE) { //if the machine is in idle state, pass the RGB_white value to Pack
             pack = RGB_WHITE;                     
             }
@@ -127,7 +131,8 @@ static void rgb_state_changed (sys_state_t state)
         else if(state == STATE_HOLD) {
             pack = RGB_YELLOW;
             }
-         mbrgb_ModBus_WriteCoils(pack); //call our modbus message assembly function
+
+        mbrgb_ModBus_WriteCoils(pack); //call our modbus message assembly function
 
 }
 
@@ -154,7 +159,7 @@ static void mbrgb_report_options(bool newopt) {
     }
 }
 
-void mbrgb_init(void) {
+void status_light_init(void) {
         on_report_options = grbl.on_report_options;         // Subscribe to report options event
         on_state_change = grbl.on_state_change;             // Subscribe to the state changed event by saving away the original
         on_program_completed = grbl.on_program_completed;   // Subscribe to on program completed events (lightshow on complete?)
