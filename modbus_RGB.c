@@ -102,7 +102,7 @@ void mbrgb_ModBus_WriteCoils(int pack) {modbus_message_t _cmd = {
     for (int i = 0; i < (3 + 7) / 8; i++) {
         _cmd.adu[7 + i] = pack;
     }
-    modbus_send(&_cmd, &callbacks, true); //parcels this up and passes it to the modsbus_send function/queue, the callbacks include retry count. The retry count is set in modbusrgb.h
+    modbus_send(&_cmd, &callbacks, false); //parcels this up and passes it to the modsbus_send function/queue, the callbacks include retry count. The retry count is set in modbusrgb.h
 }
 
 static void rgb_state_changed (sys_state_t state)
