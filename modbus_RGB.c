@@ -56,6 +56,7 @@ static void mbrgb_settings_save (void)
 
 static void mbrgb_settings_restore (void)
 {
+    mbrgb_config.RGB_modbus_enable = 0;
     mbrgb_config.RGB_modbus_address = 1;
     mbrgb_config.RGB_modbus_Coil = 0;
     hal.nvs.memcpy_to_nvs(nvs_address, (uint8_t *)&mbrgb_config, sizeof(mbrgb_settings_t), true);

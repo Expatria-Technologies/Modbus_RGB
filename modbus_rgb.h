@@ -24,7 +24,7 @@ along with this plugin.  If not, see <http://www.gnu.org/licenses/>.
 
 typedef struct {
     bool RGB_modbus_enable;
-    uint8_t RGB_modbus_address;
+    uint16_t RGB_modbus_address;
     uint16_t RGB_modbus_Coil; //added by empyrean 2025-11-24
 } mbrgb_settings_t;
 
