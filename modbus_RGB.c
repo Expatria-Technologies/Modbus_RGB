@@ -72,27 +72,26 @@ static const modbus_callbacks_t callbacks = {
     .retries = MBRGB_RETRIES,
 };
 
-#define value 3             //this value defines how many coils to set the state for, IE if we start at address 0 we will write 0,1 & 2             
+#define MBRGB_COIL_COUNT 3             //this value defines how many coils to set the state for, IE if we start at address 0 we will write 0,1 & 2             
 
-int RGB_OFF     =0; //turns all (the 3 we are writing to) channels off       
-int RGB_WHITE   =7; //turns all 3 on. 7
-int RGB_RED     =1; //turns Ch1 on
-int RGB_GREEN   =2; //turns Ch2 on
-int RGB_BLUE    =4; //turns Ch3 on
-int RGB_YELLOW  =3; //turns Ch1 & Ch2 on
-int RGB_MAGENTA =5; //turns Ch1 & Ch3 on
-int RGB_CYAN    =6; //turns Ch2 & Ch3 on
-int pack;           //this variable is what is packed into the modbus message to the device
+static int RGB_OFF     =0; //turns all (the 3 we are writing to) channels off       
+static int RGB_WHITE   =7; //turns all 3 on. 7
+static int RGB_RED     =1; //turns Ch1 on
+static int RGB_GREEN   =2; //turns Ch2 on
+static int RGB_BLUE    =4; //turns Ch3 on
+static int RGB_YELLOW  =3; //turns Ch1 & Ch2 on
+static int RGB_MAGENTA =5; //turns Ch1 & Ch3 on
+static int RGB_CYAN    =6; //turns Ch2 & Ch3 on
 
-void mbrgb_ModBus_WriteCoils(int pack) {modbus_message_t _cmd = {
+static void mbrgb_ModBus_WriteCoils(uint16_t pack, bool block) {modbus_message_t _cmd = {
         //.context = (void *)MBIO_Command,
         .crc_check = true,
         .adu[0] = mbrgb_config.RGB_modbus_address,                        // slave device address 
         .adu[1] = 15,                                                     // function code this is the multiple coil write modbus command code
         .adu[2] = MODBUS_SET_MSB16(mbrgb_config.RGB_modbus_Coil),         // start address MSB 
         .adu[3] = MODBUS_SET_LSB16(mbrgb_config.RGB_modbus_Coil),         // start address LSB
-        .adu[4] = MODBUS_SET_MSB16(value),                                // quantity MSB
-        .adu[5] = MODBUS_SET_LSB16(value),                                // quantity LSB
+        .adu[4] = MODBUS_SET_MSB16(MBRGB_COIL_COUNT),                                // quantity MSB
+        .adu[5] = MODBUS_SET_LSB16(MBRGB_COIL_COUNT),                                // quantity LSB
         .adu[6] = (3 + 7) / 8,                                            // byte count (ceil of bits/8)
         // coil values packed into bytes follow here
         .tx_length = 7 + ((3 + 7) / 8) + 2,                               // header + data + CRC
@@ -103,13 +102,19 @@ void mbrgb_ModBus_WriteCoils(int pack) {modbus_message_t _cmd = {
     for (int i = 0; i < (3 + 7) / 8; i++) {
         _cmd.adu[7 + i] = pack;
     }
-    modbus_send(&_cmd, &callbacks, false); //parcels this up and passes it to the modsbus_send function/queue, the callbacks include retry count. The retry count is set in modbusrgb.h
+    modbus_send(&_cmd, &callbacks, block); //parcels this up and passes it to the modsbus_send function/queue, the callbacks include retry count. The retry count is set in modbusrgb.h
 }
 
 static void rgb_state_changed (sys_state_t state)
 {
+        bool block;
+        uint16_t pack;
+    
         if (!mbrgb_config.RGB_modbus_enable)
             return;
+
+        block = false;
+        pack = RGB_WHITE;
 
         if(state == STATE_IDLE) { //if the machine is in idle state, pass the RGB_white value to Pack
             pack = RGB_WHITE;                     
@@ -120,7 +125,8 @@ static void rgb_state_changed (sys_state_t state)
         else if(state == STATE_JOG) {
             pack = RGB_GREEN;                     
             }
-        else if(state == STATE_ALARM) {
+        else if(state == STATE_ALARM || state == STATE_ESTOP) {
+            block = true;
             pack = RGB_RED;
             }
         else if(state == STATE_HOMING) {
@@ -133,7 +139,7 @@ static void rgb_state_changed (sys_state_t state)
             pack = RGB_YELLOW;
             }
 
-        mbrgb_ModBus_WriteCoils(pack); //call our modbus message assembly function
+        mbrgb_ModBus_WriteCoils(pack, block); //call our modbus message assembly function
 
 }
 
@@ -147,6 +153,15 @@ static void onStateChanged (sys_state_t state)
         state_prev = state;
     } 
 
+    if(on_state_change)
+        on_state_change(state);    
+
+}
+
+static void onProgramCompleted (program_flow_t program_flow, bool check_mode){
+
+    if(on_program_completed)
+        on_program_completed(program_flow, check_mode);
 }
 
 static void mbrgb_report_options(bool newopt) {
@@ -163,10 +178,14 @@ static void mbrgb_report_options(bool newopt) {
 void status_light_init(void) {
         on_report_options = grbl.on_report_options;         // Subscribe to report options event
         on_state_change = grbl.on_state_change;             // Subscribe to the state changed event by saving away the original
-        on_program_completed = grbl.on_program_completed;   // Subscribe to on program completed events (lightshow on complete?)
-        //on_execute_realtime = grbl.on_execute_realtime;     // Subscribe to the realtime execution event
         grbl.on_state_change = onStateChanged;
+
+        on_program_completed = grbl.on_program_completed;   // Subscribe to on program completed events (lightshow on complete?)
+        grbl.on_program_completed = onProgramCompleted;   
+
+        //on_execute_realtime = grbl.on_execute_realtime;     // Subscribe to the realtime execution event
         on_spindle_selected = grbl.on_spindle_selected;
+
         grbl.on_report_options = mbrgb_report_options;
 
     static setting_details_t mbrgb_setting_details = {
