@@ -15,7 +15,7 @@
 
 //this plugin was written with the intent of being used with the R4DVI04 eletechsup modbus IO board which carries 4 relays which can be used to drive a simple RGB LED Strip.
 
-#if STATUS_LIGHT_ENABLE
+#if MBRGB_ENABLE 
 #include <math.h>
 #include "grbl/hal.h"
 #include "grbl/state_machine.h"
