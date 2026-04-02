@@ -126,7 +126,7 @@ static void rgb_state_changed (sys_state_t state)
             pack = RGB_GREEN;                     
             }
         else if(state == STATE_ALARM || state == STATE_ESTOP) {
-            block = true;
+            //block = true;
             pack = RGB_RED;
             }
         else if(state == STATE_HOMING) {
